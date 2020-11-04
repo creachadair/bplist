@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"time"
 	"unicode/utf16"
@@ -141,7 +140,6 @@ func Parse(data []byte, h Handler) error {
 
 	t := parseTrailer(data[len(data)-32:])
 	if t.tableEnd() > len(data)-32 {
-		log.Printf("MJF :: len(data)=%d tableEnd=%d", len(data), t.tableEnd())
 		return errors.New("invalid offsets table")
 	}
 	offsets := make([]int, t.NumObjects)
