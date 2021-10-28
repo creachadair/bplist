@@ -19,7 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/creachadair/bplist"
@@ -31,13 +31,13 @@ func TestManual(t *testing.T) {
 	if *testFile == "" {
 		t.Skip("Skipping because no -input file is given")
 	}
-	data, err := ioutil.ReadFile(*testFile)
+	data, err := os.ReadFile(*testFile)
 	if err != nil {
 		t.Fatalf("Reading input: %v", err)
 	}
 	if err := bplist.Parse(data, testHandler{
 		log: t.Logf,
-		buf: ioutil.Discard,
+		buf: io.Discard,
 	}); err != nil {
 		t.Errorf("Parse failed: %v", err)
 	}
