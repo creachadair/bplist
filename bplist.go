@@ -131,6 +131,11 @@ func (c Collection) String() string {
 	return "unknown"
 }
 
+// Parse parses data as a binary property list, calling the methods of h to
+// deliver the results. An error from h terminates parsing and is reported to
+// the caller of Parse.
+//
+// Only version "00" of the binary property list schema is fully understood.
 func Parse(data []byte, h Handler) error {
 	const magic = "bplist"
 	const trailerBytes = 32
