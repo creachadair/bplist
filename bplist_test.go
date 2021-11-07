@@ -62,6 +62,36 @@ func TestBasic(t *testing.T) {
 	}
 }
 
+func TestBuilder(t *testing.T) {
+	b := newTestBuilder(t)
+
+	// Assemble a property list equivalent to the testInput, and verify that it
+	// round-trips correctly through the parser.
+	b.Open(bplist.Dict)
+	b.mustElement(bplist.TString, "NSHTTPCookieAcceptPolicy")
+	b.mustElement(bplist.TInteger, 2)
+	b.mustClose(bplist.Dict)
+
+	var buf bytes.Buffer
+	if _, err := b.WriteTo(&buf); err != nil {
+		t.Fatalf("Encoding WriteTo failed: %v", err)
+	}
+
+	input := buf.String()
+	buf.Reset()
+
+	if err := bplist.Parse([]byte(input), testHandler{
+		log: t.Logf,
+		buf: &buf,
+	}); err != nil {
+		t.Errorf("Parse failed; %v", err)
+	}
+	const want = `V"00"<dict size=1>(string=NSHTTPCookieAcceptPolicy)(int=2)</dict>`
+	if got := buf.String(); got != want {
+		t.Errorf("Parse result: got %s, want %s", got, want)
+	}
+}
+
 type testHandler struct {
 	log func(string, ...interface{})
 	buf io.Writer
@@ -93,36 +123,6 @@ func (h testHandler) Close(coll bplist.Collection) error {
 	h.log("Close %v", coll)
 	fmt.Fprintf(h.buf, "</%s>", coll)
 	return nil
-}
-
-func TestBuilder(t *testing.T) {
-	b := newTestBuilder(t)
-
-	// Assemble a property list equivalent to the testInput, and verify that it
-	// round-trips correctly through the parser.
-	b.Open(bplist.Dict)
-	b.mustElement(bplist.TString, "NSHTTPCookieAcceptPolicy")
-	b.mustElement(bplist.TInteger, 2)
-	b.mustClose(bplist.Dict)
-
-	var buf bytes.Buffer
-	if _, err := b.WriteTo(&buf); err != nil {
-		t.Fatalf("Encoding WriteTo failed: %v", err)
-	}
-
-	input := buf.String()
-	buf.Reset()
-
-	if err := bplist.Parse([]byte(input), testHandler{
-		log: t.Logf,
-		buf: &buf,
-	}); err != nil {
-		t.Errorf("Parse failed; %v", err)
-	}
-	const want = `V"00"<dict size=1>(string=NSHTTPCookieAcceptPolicy)(int=2)</dict>`
-	if got := buf.String(); got != want {
-		t.Errorf("Parse result: got %s, want %s", got, want)
-	}
 }
 
 type testBuilder struct {
