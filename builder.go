@@ -126,7 +126,7 @@ func (b *Builder) Element(typ Type, datum interface{}) error {
 		// Allow either a string or a slice for this, but convert the actual
 		// value to a string so it can be checked as a map key for deduplication.
 		var b []byte
-		b, ok := datum.([]byte)
+		b, ok = datum.([]byte)
 		if ok {
 			datum = string(b)
 		} else {
