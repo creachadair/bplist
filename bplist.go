@@ -113,6 +113,7 @@ func (t Type) String() string {
 // Collection enumerates the types of container elements.
 type Collection int
 
+// Constants defining the collection types.
 const (
 	Array Collection = iota + 1 // an ordered sequence
 	Set                         // an unordered group
