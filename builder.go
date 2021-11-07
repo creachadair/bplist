@@ -68,17 +68,27 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 		return total, err
 	}
 
-	// Build the offset table and file trailer.
-	offStart := total // start of offset table
+	// Build the offset table.
+	//
+	// Each offset in the table must have enough bits to hold the largest
+	// possible offset for any object, which is bounded by the offset of the
+	// table itself (i.e., the end of the variable objects).
+	offStart := total
+	offSize := numBytes(uint64(offStart + int64(base)))
+
 	var idx bytes.Buffer
-	offSize := numBytes(uint64(b.nobj))
 	for i := 0; i < b.nobj; i++ {
 		off, ok := e.offset[i]
 		if !ok {
 			return total, fmt.Errorf("object %d missing offset", i)
 		}
-		writeInt(&idx, offSize, off+base)
+		writeInt(&idx, offSize, off+base) // shift past header
 	}
+
+	// Build the file trailer, a 32-byte index for the rest of the file.  The
+	// first word contains the offset and pointer sizes, the rest give the
+	// object count, root object pointer, and location of the offset table
+	// relative to the start of the file.
 	var zbuf [8]byte
 	zbuf[6] = byte(offSize)
 	zbuf[7] = byte(e.idSize)
