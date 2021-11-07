@@ -27,9 +27,10 @@ import (
 	"unicode/utf8"
 )
 
-// A Builder accumulates values to build a binary property list.
-// Add elements and collections to the list with Element, Open, and Close.
-// When the property list is complete, use WriteTo to encode it.
+// A Builder accumulates values to build a binary property list.  The zero
+// value is ready for use.  Add elements and collections to the list with
+// Element, Open, and Close.  When the property list is complete, use WriteTo
+// to encode it.
 type Builder struct {
 	stk  []entry
 	nobj int
