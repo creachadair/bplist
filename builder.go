@@ -180,7 +180,14 @@ func (b *Builder) Open(coll Collection) {
 func (b *Builder) Close(coll Collection) error {
 	// Search back for the nearest open collection of this kind.
 	n := len(b.stk) - 1
-	for n >= 0 && (b.stk[n].coll != coll || b.stk[n].closed) {
+	for n >= 0 {
+		if b.stk[n].coll == coll {
+			if !b.stk[n].closed {
+				break
+			}
+		} else if b.stk[n].coll != 0 && !b.stk[n].closed {
+			return fmt.Errorf("unclosed %v", b.stk[n].coll)
+		}
 		n--
 	}
 	if n < 0 {
