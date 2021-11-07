@@ -180,8 +180,8 @@ func (b *Builder) Value(typ Type, datum interface{}) error {
 // For example:
 //
 //     b.Open(bplist.Array)
-//     b.Value(bplist.String, "foo")
-//     b.Value(bplist.String, "bar")
+//     b.Value(bplist.TString, "foo")
+//     b.Value(bplist.TString, "bar")
 //     b.Close(bplist.Array)
 //
 func (b *Builder) Open(coll Collection) {
