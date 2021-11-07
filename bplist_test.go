@@ -92,6 +92,38 @@ func TestBuilder(t *testing.T) {
 	}
 }
 
+func TestBuilderErrors(t *testing.T) {
+	b := bplist.NewBuilder()
+	if err := b.Err(); err != nil {
+		t.Errorf("Err on new builder: got %v, want nil", err)
+	}
+
+	t.Run("UnclosedArray", func(t *testing.T) {
+		err := b.Close(bplist.Array)
+		cerr := b.Err()
+		if err == nil {
+			t.Error("Close: got nil, wanted an error")
+		}
+		if err != cerr {
+			t.Errorf("Close/Err: got %v, want %v", cerr, err)
+		}
+	})
+
+	t.Run("ResetClearsErr", func(t *testing.T) {
+		b.Reset()
+		if err := b.Err(); err != nil {
+			t.Errorf("After reset: got err %v", err)
+		}
+	})
+
+	t.Run("BadValue", func(t *testing.T) {
+		err := b.Element(bplist.TString, 101)
+		if err == nil {
+			t.Error("Element: got nil, wanted an error")
+		}
+	})
+}
+
 type testHandler struct {
 	log func(string, ...interface{})
 	buf io.Writer

@@ -33,23 +33,35 @@ import (
 type Builder struct {
 	stk  []entry
 	nobj int
+	err  error
 }
 
 // NewBuilder constructs a new empty property list builder.
 // Add items to the property list using the Element, Open, and Close methods.
 func NewBuilder() *Builder { return new(Builder) }
 
+// Err reports the last error that caused an operation on b to fail.  It
+// returns nil for a new builder.  Any error causes all subsequent operations
+// on the builder to fail with the same error.
+func (b *Builder) Err() error { return b.err }
+
+// Reset discards all the data associated with b and restores it to its initial
+// state. This also clears any error from a previous failed operation.
+func (b *Builder) Reset() { *b = Builder{} }
+
 // WriteTo encodes the property list and writes it in binary form to w.
 func (b *Builder) WriteTo(w io.Writer) (int64, error) {
-	if len(b.stk) != 1 {
-		return 0, fmt.Errorf("have %d elements, want 1", len(b.stk))
+	if b.err != nil {
+		return 0, b.err
+	} else if len(b.stk) != 1 {
+		return 0, b.fail(fmt.Errorf("have %d elements, want 1", len(b.stk)))
 	}
 
 	// Encode the variable-size objects.
 	e := newEncoder(b.nobj)
 	root, err := e.encode(b.stk[0])
 	if err != nil {
-		return 0, err
+		return 0, b.fail(err)
 	}
 
 	// Write the file header.
@@ -57,7 +69,7 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 	nw, err := io.WriteString(w, "bplist00")
 	total += int64(nw)
 	if err != nil {
-		return total, err
+		return total, b.fail(err)
 	}
 	base := int(total) // start of variable objects
 
@@ -65,7 +77,7 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 	nc, err := io.Copy(w, e.buf)
 	total += nc
 	if err != nil {
-		return total, err
+		return total, b.fail(err)
 	}
 
 	// Build the offset table.
@@ -80,7 +92,7 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 	for i := 0; i < b.nobj; i++ {
 		off, ok := e.offset[i]
 		if !ok {
-			return total, fmt.Errorf("object %d missing offset", i)
+			return total, b.fail(fmt.Errorf("object %d missing offset", i))
 		}
 		writeInt(&idx, offSize, off+base) // shift past header
 	}
@@ -103,13 +115,16 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 	// Copy the offset table and trailer.
 	nc, err = io.Copy(w, &idx)
 	total += nc
-	return int64(total), err
+	return int64(total), b.fail(err)
 }
 
 // Element adds a single data element to the property list.  It reports an
 // error if typ is not a known element type, or if datum is not a valid value
 // for that type.
 func (b *Builder) Element(typ Type, datum interface{}) error {
+	if b.err != nil {
+		return b.err
+	}
 	var ok bool
 	switch typ {
 	case TNull:
@@ -147,10 +162,10 @@ func (b *Builder) Element(typ Type, datum interface{}) error {
 			datum = string(b)
 		}
 	default:
-		return fmt.Errorf("unknown element type: %v", typ)
+		return b.fail(fmt.Errorf("unknown element type: %v", typ))
 	}
 	if !ok {
-		return fmt.Errorf("invalid datum %T for %v", datum, typ)
+		return b.fail(fmt.Errorf("invalid datum %T for %v", datum, typ))
 	}
 	elt := entry{elt: typ, datum: datum}
 	b.stk = append(b.stk, elt)
@@ -178,6 +193,10 @@ func (b *Builder) Open(coll Collection) {
 // dictionary (bplist.Dict) it reports an error if the elements are not
 // properly paired (key/value).
 func (b *Builder) Close(coll Collection) error {
+	if b.err != nil {
+		return b.err
+	}
+
 	// Search back for the nearest open collection of this kind.
 	n := len(b.stk) - 1
 	for n >= 0 {
@@ -186,18 +205,18 @@ func (b *Builder) Close(coll Collection) error {
 				break
 			}
 		} else if b.stk[n].coll != 0 && !b.stk[n].closed {
-			return fmt.Errorf("unclosed %v", b.stk[n].coll)
+			return b.fail(fmt.Errorf("unclosed %v", b.stk[n].coll))
 		}
 		n--
 	}
 	if n < 0 {
-		return fmt.Errorf("close of unopened %v", coll)
+		return b.fail(fmt.Errorf("close of unopened %v", coll))
 	}
 	elts := b.stk[n+1:] // everything after the open is now content
 
 	// For dictionaries, contents must be paired (key, value).
 	if coll == Dict && len(elts)%2 != 0 {
-		return errors.New("missing value in dictionary")
+		return b.fail(errors.New("missing value in dictionary"))
 	}
 
 	// Pack the entries into the collection and mark it complete.
@@ -207,6 +226,13 @@ func (b *Builder) Close(coll Collection) error {
 	b.stk[n].closed = true
 	b.stk = b.stk[:n+1]
 	return nil
+}
+
+func (b *Builder) fail(err error) error {
+	if err != nil {
+		b.err = err
+	}
+	return err
 }
 
 func newEncoder(nobj int) *encoder {
