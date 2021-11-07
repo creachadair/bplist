@@ -25,8 +25,17 @@ import (
 	"unicode/utf16"
 )
 
+const macEpoch = 978307200 // 01-Jan-2001
+
 // References:
 //   https://opensource.apple.com/source/CF/CF-550/CFBinaryPList.c
+//   http://fileformats.archiveteam.org/wiki/Property_List/Binary
+//
+// A Core Data timestamp is the number of seconds (or nanoseconds) since
+// midnight, January 1, 2001, GMT (see CFAbsoluteTime).
+//
+// The difference between a Core Data timestamp and a Unix timestamp (seconds
+// since 1/1/1970) is 978307200 seconds.
 
 // A Handler provides callbacks to handle objects from a property list.  If a
 // handler method reports an error, that error is propagated to the caller.
@@ -142,6 +151,7 @@ func Parse(data []byte, h Handler) error {
 	if t.tableEnd() > len(data)-32 {
 		return errors.New("invalid offsets table")
 	}
+
 	offsets := make([]int, t.NumObjects)
 	for i := 0; i < len(offsets); i++ {
 		base := t.OffsetTable + t.OffsetBytes*i
@@ -174,7 +184,6 @@ func Parse(data []byte, h Handler) error {
 
 		case 3: // date
 			if tag&0xf == 3 {
-				const macEpoch = 978307200 // 01-Jan-2001
 				sec := parseFloat(data[off+1 : off+9])
 				return h.Element(TTime, time.Unix(int64(sec)+macEpoch, 0).In(time.UTC))
 			}
