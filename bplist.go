@@ -43,9 +43,9 @@ type Handler interface {
 	// Called for the version string, e.g., "00".
 	Version(string) error
 
-	// Called for primitive data elements. The concrete type of the datum
-	// depends on the Type; see the comments for the Type enumerators.
-	Element(typ Type, datum interface{}) error
+	// Called for primitive data values. The concrete type of the datum depends
+	// on the Type; see the comments for the Type enumerators.
+	Value(typ Type, datum interface{}) error
 
 	// Called to open a new collection of the given type with n elements.
 	Open(typ Collection, n int) error
@@ -167,38 +167,38 @@ func Parse(data []byte, h Handler) error {
 		case 0: // null, bool, fill
 			switch tag & 0xf {
 			case 0:
-				return h.Element(TNull, nil)
+				return h.Value(TNull, nil)
 			case 8:
-				return h.Element(TBool, false)
+				return h.Value(TBool, false)
 			case 9:
-				return h.Element(TBool, true)
+				return h.Value(TBool, true)
 			}
 
 		case 1: // int
 			size := 1 << (tag & 0xf)
-			return h.Element(TInteger, parseInt(data[off+1:off+1+size]))
+			return h.Value(TInteger, parseInt(data[off+1:off+1+size]))
 
 		case 2: // real
 			size := 1 << (tag & 0xf)
-			return h.Element(TFloat, parseFloat(data[off+1:off+1+size]))
+			return h.Value(TFloat, parseFloat(data[off+1:off+1+size]))
 
 		case 3: // date
 			if tag&0xf == 3 {
 				sec := parseFloat(data[off+1 : off+9])
-				return h.Element(TTime, time.Unix(int64(sec)+macEpoch, 0).In(time.UTC))
+				return h.Value(TTime, time.Unix(int64(sec)+macEpoch, 0).In(time.UTC))
 			}
 
 		case 4: // data
 			size, shift := sizeAndShift(tag, data[off+1:])
 			start := off + 1 + shift
 			end := start + size
-			return h.Element(TBytes, data[start:end])
+			return h.Value(TBytes, data[start:end])
 
 		case 5, 7: // ASCII or UTF-8 string
 			size, shift := sizeAndShift(tag, data[off+1:])
 			start := off + 1 + shift
 			end := start + size
-			return h.Element(TString, string(data[start:end]))
+			return h.Value(TString, string(data[start:end]))
 
 		case 6: // Unicode string
 			size, shift := sizeAndShift(tag, data[off+1:])
@@ -208,13 +208,13 @@ func Parse(data []byte, h Handler) error {
 				runes[i] = binary.BigEndian.Uint16(data[start:])
 				start += 2
 			}
-			return h.Element(TUnicode, utf16.Decode(runes))
+			return h.Value(TUnicode, utf16.Decode(runes))
 
 		case 8: // UID
 			size, shift := sizeAndShift(tag, data[off+1:])
 			start := off + 1 + shift
 			end := start + size
-			return h.Element(TUID, data[start:end])
+			return h.Value(TUID, data[start:end])
 
 		case 10, 11, 12: // array or set
 			coll := Array

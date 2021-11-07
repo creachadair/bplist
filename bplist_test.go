@@ -68,8 +68,8 @@ func TestBuilder(t *testing.T) {
 	// Assemble a property list equivalent to the testInput, and verify that it
 	// round-trips correctly through the parser.
 	b.Open(bplist.Dict)
-	b.mustElement(bplist.TString, "NSHTTPCookieAcceptPolicy")
-	b.mustElement(bplist.TInteger, 2)
+	b.mustValue(bplist.TString, "NSHTTPCookieAcceptPolicy")
+	b.mustValue(bplist.TInteger, 2)
 	b.mustClose(bplist.Dict)
 
 	var buf bytes.Buffer
@@ -117,9 +117,9 @@ func TestBuilderErrors(t *testing.T) {
 	})
 
 	t.Run("BadValue", func(t *testing.T) {
-		err := b.Element(bplist.TString, 101)
+		err := b.Value(bplist.TString, 101)
 		if err == nil {
-			t.Error("Element: got nil, wanted an error")
+			t.Error("Value: got nil, wanted an error")
 		}
 	})
 }
@@ -135,8 +135,8 @@ func (h testHandler) Version(s string) error {
 	return nil
 }
 
-func (h testHandler) Element(elt bplist.Type, datum interface{}) error {
-	h.log("Element %v %v", elt, datum)
+func (h testHandler) Value(elt bplist.Type, datum interface{}) error {
+	h.log("Value %v %v", elt, datum)
 	if b, ok := datum.([]byte); ok {
 		fmt.Fprintf(h.buf, "(%s=%d bytes)", elt, len(b))
 	} else {
@@ -166,10 +166,10 @@ func newTestBuilder(t *testing.T) *testBuilder {
 	return &testBuilder{t: t, Builder: bplist.NewBuilder()}
 }
 
-func (b *testBuilder) mustElement(typ bplist.Type, datum interface{}) {
+func (b *testBuilder) mustValue(typ bplist.Type, datum interface{}) {
 	b.t.Helper()
-	if err := b.Element(typ, datum); err != nil {
-		b.t.Fatalf("Element %v %v: unexpected error: %v", typ, datum, err)
+	if err := b.Value(typ, datum); err != nil {
+		b.t.Fatalf("Value %v %v: unexpected error: %v", typ, datum, err)
 	}
 }
 

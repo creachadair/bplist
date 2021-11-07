@@ -29,8 +29,8 @@ import (
 
 // A Builder accumulates values to build a binary property list.  The zero
 // value is ready for use.  Add elements and collections to the list with
-// Element, Open, and Close.  When the property list is complete, use WriteTo
-// to encode it.
+// Value, Open, and Close.  When the property list is complete, use WriteTo to
+// encode it.
 type Builder struct {
 	stk  []entry
 	nobj int
@@ -38,7 +38,7 @@ type Builder struct {
 }
 
 // NewBuilder constructs a new empty property list builder.
-// Add items to the property list using the Element, Open, and Close methods.
+// Add items to the property list using the Value, Open, and Close methods.
 func NewBuilder() *Builder { return new(Builder) }
 
 // Err reports the last error that caused an operation on b to fail.  It
@@ -119,10 +119,10 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 	return int64(total), b.fail(err)
 }
 
-// Element adds a single data element to the property list.  It reports an
-// error if typ is not a known element type, or if datum is not a valid value
-// for that type.
-func (b *Builder) Element(typ Type, datum interface{}) error {
+// Value adds a single data element to the property list.  It reports an error
+// if typ is not a known element type, or if datum is not a valid value for
+// that type.
+func (b *Builder) Value(typ Type, datum interface{}) error {
 	if b.err != nil {
 		return b.err
 	}
@@ -180,8 +180,8 @@ func (b *Builder) Element(typ Type, datum interface{}) error {
 // For example:
 //
 //     b.Open(bplist.Array)
-//     b.Element(bplist.String, "foo")
-//     b.Element(bplist.String, "bar")
+//     b.Value(bplist.String, "foo")
+//     b.Value(bplist.String, "bar")
 //     b.Close(bplist.Array)
 //
 func (b *Builder) Open(coll Collection) {
