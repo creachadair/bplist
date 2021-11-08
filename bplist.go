@@ -40,17 +40,23 @@ const macEpoch = 978307200 // 01-Jan-2001
 // A Handler provides callbacks to handle objects from a property list.  If a
 // handler method reports an error, that error is propagated to the caller.
 type Handler interface {
-	// Called for the version string, e.g., "00".
+	// Called for the version string, e.g., "00". This method is the first to be
+	// called when a file is parsed, and if it reports an error, the rest of the
+	// file will not be consumed.
 	Version(string) error
 
 	// Called for primitive data values. The concrete type of the datum depends
 	// on the Type; see the comments for the Type enumerators.
 	Value(typ Type, datum interface{}) error
 
-	// Called to open a new collection of the given type with n elements.
+	// Called to indicate the beginning of new collection of the given type,
+	// having n elements. After Open, subsequent values belong to this
+	// collection until the corresponding Close.  For a dictionary, keys and
+	// values alternate: key1, value, key2, value2, ..., in n pairs.
 	Open(typ Collection, n int) error
 
-	// Called to close the latest collection of the given type.
+	// Called to indicate the end of the most recently-opened collection of the
+	// given type.
 	Close(Collection) error
 }
 
