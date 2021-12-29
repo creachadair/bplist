@@ -28,9 +28,8 @@ import (
 )
 
 // A Builder accumulates values to build a binary property list.  The zero
-// value is ready for use.  Add elements and collections to the list with
-// Value, Open, and Close.  When the property list is complete, use WriteTo to
-// encode it.
+// value is ready for use.  Add elements and collections to the list with Value
+// and Open.  When the property list is complete, use WriteTo to encode it.
 type Builder struct {
 	stk  []entry
 	nobj int
@@ -174,26 +173,29 @@ func (b *Builder) Value(typ Type, datum interface{}) error {
 	return nil
 }
 
-// Open adds a new empty collection of the given type. The collection must be
-// closed after all its items have been added.
+// Open adds a new empty collection of the given type, and calls f to populate
+// its contents. When f returns, the collection is automatically closed.  It is
+// safe and valid for f to open further nested collections.
 //
 // For example:
 //
-//     b.Open(bplist.Array)
-//     b.Value(bplist.TString, "foo")
-//     b.Value(bplist.TString, "bar")
-//     b.Close(bplist.Array)
+//     b.Open(bplist.Array, func(b *bplist.Builder) {
+//       b.Value(bplist.TString, "foo")
+//       b.Value(bplist.TString, "bar")
+//     })
 //
-func (b *Builder) Open(coll Collection) {
+func (b *Builder) Open(coll Collection, f func(*Builder)) {
 	b.stk = append(b.stk, entry{coll: coll})
 	b.nobj++ // +1 for the collection (items are separate)
+	defer b.close(coll)
+	f(b)
 }
 
-// Close closes the most recently-opened collection of the given type. It
+// close closes the most recently-opened collection of the given type. It
 // reports an error if no collection of that type is open. If coll is a
 // dictionary (bplist.Dict) it reports an error if the elements are not
 // properly paired (key/value).
-func (b *Builder) Close(coll Collection) error {
+func (b *Builder) close(coll Collection) error {
 	if b.err != nil {
 		return b.err
 	}

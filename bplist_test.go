@@ -63,14 +63,14 @@ func TestBasic(t *testing.T) {
 }
 
 func TestBuilder(t *testing.T) {
-	b := newTestBuilder(t)
+	b := bplist.NewBuilder()
 
 	// Assemble a property list equivalent to the testInput, and verify that it
 	// round-trips correctly through the parser.
-	b.Open(bplist.Dict)
-	b.mustValue(bplist.TString, "NSHTTPCookieAcceptPolicy")
-	b.mustValue(bplist.TInteger, 2)
-	b.mustClose(bplist.Dict)
+	b.Open(bplist.Dict, func(b *bplist.Builder) {
+		b.Value(bplist.TString, "NSHTTPCookieAcceptPolicy")
+		b.Value(bplist.TInteger, 2)
+	})
 
 	var buf bytes.Buffer
 	if _, err := b.WriteTo(&buf); err != nil {
@@ -97,17 +97,6 @@ func TestBuilderErrors(t *testing.T) {
 	if err := b.Err(); err != nil {
 		t.Errorf("Err on new builder: got %v, want nil", err)
 	}
-
-	t.Run("UnclosedArray", func(t *testing.T) {
-		err := b.Close(bplist.Array)
-		cerr := b.Err()
-		if err == nil {
-			t.Error("Close: got nil, wanted an error")
-		}
-		if err != cerr {
-			t.Errorf("Close/Err: got %v, want %v", cerr, err)
-		}
-	})
 
 	t.Run("ResetClearsErr", func(t *testing.T) {
 		b.Reset()
@@ -155,27 +144,4 @@ func (h testHandler) Close(coll bplist.Collection) error {
 	h.log("Close %v", coll)
 	fmt.Fprintf(h.buf, "</%s>", coll)
 	return nil
-}
-
-type testBuilder struct {
-	t *testing.T
-	*bplist.Builder
-}
-
-func newTestBuilder(t *testing.T) *testBuilder {
-	return &testBuilder{t: t, Builder: bplist.NewBuilder()}
-}
-
-func (b *testBuilder) mustValue(typ bplist.Type, datum interface{}) {
-	b.t.Helper()
-	if err := b.Value(typ, datum); err != nil {
-		b.t.Fatalf("Value %v %v: unexpected error: %v", typ, datum, err)
-	}
-}
-
-func (b *testBuilder) mustClose(coll bplist.Collection) {
-	b.t.Helper()
-	if err := b.Close(coll); err != nil {
-		b.t.Fatalf("Close %v: unexpected error: %v", coll, err)
-	}
 }
