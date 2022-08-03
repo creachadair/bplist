@@ -179,11 +179,10 @@ func (b *Builder) Value(typ Type, datum interface{}) error {
 //
 // For example:
 //
-//     b.Open(bplist.Array, func(b *bplist.Builder) {
-//       b.Value(bplist.TString, "foo")
-//       b.Value(bplist.TString, "bar")
-//     })
-//
+//	b.Open(bplist.Array, func(b *bplist.Builder) {
+//	  b.Value(bplist.TString, "foo")
+//	  b.Value(bplist.TString, "bar")
+//	})
 func (b *Builder) Open(coll Collection, f func(*Builder)) {
 	b.stk = append(b.stk, entry{coll: coll})
 	b.nobj++ // +1 for the collection (items are separate)
