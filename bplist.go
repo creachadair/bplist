@@ -47,7 +47,7 @@ type Handler interface {
 
 	// Called for primitive data values. The concrete type of the datum depends
 	// on the Type; see the comments for the Type enumerators.
-	Value(typ Type, datum interface{}) error
+	Value(typ Type, datum any) error
 
 	// Called to indicate the beginning of new collection of the given type,
 	// having n elements. After Open, subsequent values belong to this

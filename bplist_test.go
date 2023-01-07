@@ -114,7 +114,7 @@ func TestBuilderErrors(t *testing.T) {
 }
 
 type testHandler struct {
-	log func(string, ...interface{})
+	log func(string, ...any)
 	buf io.Writer
 }
 
@@ -124,7 +124,7 @@ func (h testHandler) Version(s string) error {
 	return nil
 }
 
-func (h testHandler) Value(elt bplist.Type, datum interface{}) error {
+func (h testHandler) Value(elt bplist.Type, datum any) error {
 	h.log("Value %v %v", elt, datum)
 	if b, ok := datum.([]byte); ok {
 		fmt.Fprintf(h.buf, "(%s=%d bytes)", elt, len(b))

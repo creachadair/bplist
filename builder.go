@@ -121,7 +121,7 @@ func (b *Builder) WriteTo(w io.Writer) (int64, error) {
 // Value adds a single data element to the property list.  It reports an error
 // if typ is not a known element type, or if datum is not a valid value for
 // that type.
-func (b *Builder) Value(typ Type, datum interface{}) error {
+func (b *Builder) Value(typ Type, datum any) error {
 	if b.err != nil {
 		return b.err
 	}
@@ -379,11 +379,11 @@ func (e *encoder) encodeCollection(elt entry, ids []int) (int, error) {
 }
 
 type entry struct {
-	coll    Collection  // 0 for an element
-	elt     Type        // element type; ignored if coll ≠ 0
-	datum   interface{} // nil for a collection
-	closed  bool        // collection is complete (content is valid)
-	content []entry     // nil for an element
+	coll    Collection // 0 for an element
+	elt     Type       // element type; ignored if coll ≠ 0
+	datum   any        // nil for a collection
+	closed  bool       // collection is complete (content is valid)
+	content []entry    // nil for an element
 }
 
 // Precondition: e is an element, not a collection.
@@ -393,7 +393,7 @@ func cacheKey(e entry) string {
 
 // intValue reports whether v is an integer convertible to int64, and if so
 // converts it to one. If not, it returns 0 as the value.
-func intValue(v interface{}) (int64, bool) {
+func intValue(v any) (int64, bool) {
 	switch t := v.(type) {
 	case int64:
 		return t, true
