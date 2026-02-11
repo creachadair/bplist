@@ -258,7 +258,7 @@ func writeInt(w io.Writer, nb, z int) {
 	var zbuf [8]byte
 
 	v := uint64(z)
-	for i := 0; i < nb; i++ {
+	for i := range nb {
 		zbuf[7-i] = byte(v & 255)
 		v >>= 8
 	}

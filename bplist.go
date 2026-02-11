@@ -165,7 +165,7 @@ func Parse(data []byte, h Handler) error {
 	}
 
 	offsets := make([]int, t.NumObjects)
-	for i := 0; i < len(offsets); i++ {
+	for i := range offsets {
 		base := t.OffsetTable + t.OffsetBytes*i
 		offsets[i] = int(parseInt(data[base : base+t.OffsetBytes]))
 	}
@@ -216,7 +216,7 @@ func Parse(data []byte, h Handler) error {
 			size, shift := sizeAndShift(tag, data[off+1:])
 			start := off + 1 + shift
 			runes := make([]uint16, size)
-			for i := 0; i < size; i++ {
+			for i := range size {
 				runes[i] = binary.BigEndian.Uint16(data[start:])
 				start += 2
 			}
@@ -238,7 +238,7 @@ func Parse(data []byte, h Handler) error {
 				return err
 			}
 			start := off + 1 + shift
-			for i := 0; i < size; i++ {
+			for range size {
 				ref := int(parseInt(data[start : start+t.RefBytes]))
 				if err := parseObj(ref); err != nil {
 					return err
@@ -254,7 +254,7 @@ func Parse(data []byte, h Handler) error {
 			}
 			keyStart := off + 1 + shift
 			valStart := keyStart + (size * t.RefBytes)
-			for i := 0; i < size; i++ {
+			for range size {
 				kref := int(parseInt(data[keyStart : keyStart+t.RefBytes]))
 				if err := parseObj(kref); err != nil {
 					return err
